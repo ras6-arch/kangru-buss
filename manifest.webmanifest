@@ -1,0 +1,12 @@
+{
+  "name": "Kangru buss",
+  "short_name": "Kangru buss",
+  "description": "Kiire vaade Kangru ja Põdra tee 116-seeria busside väljumistele.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f4f9",
+  "theme_color": "#7450b8",
+  "lang": "et",
+  "orientation": "portrait-primary"
+}
