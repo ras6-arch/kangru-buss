@@ -23,19 +23,18 @@ function render(){
  document.querySelector('#custom').classList.toggle('show',mode==='custom');
  document.querySelector('#nowBtn').classList.toggle('active',mode==='now');
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
- const now=new Date(),b=mode==='now'?now:baseDate(),date=localDate(b),limit=new Date(now.getTime()+4*60*60*1000);
- let rows=DATA.filter(r=>r.direction===dir);
- if(mode==='custom')rows=rows.filter(r=>r.date===date);
+ const now=new Date(),b=mode==='now'?now:baseDate(),date=localDate(b);
+ let rows=DATA.filter(r=>r.date===date&&r.direction===dir);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
- rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=b&&(mode!=='now'||r.dep<=limit)).sort((a,z)=>a.dep-z.dep).slice(0,6);
- document.querySelector('#hint').textContent=mode==='now'?'Näitan järgmise 4 tunni väljumisi.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
- if(!rows.length){list.innerHTML=mode==='now'?'<article class="ride" style="display:block"><strong>Järgmise 4 tunni jooksul väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata hilisemaid sõite.</div></article>':'<article class="ride" style="display:block"><strong>Valitud ajal väljumisi ei leitud.</strong></article>';return}
+ rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=b).sort((a,z)=>a.dep-z.dep).slice(0,6);
+ document.querySelector('#hint').textContent=mode==='now'?'Näitan tänaseid väljumisi praegusest kellaajast alates.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
+ if(!rows.length){list.innerHTML='<article class="ride" style="display:block"><strong>Selle aja järel rohkem väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata teist päeva või kellaaega.</div></article>';return}
  list.innerHTML=rows.map(r=>`<article class="ride"><div class="mins">${afterText(Math.ceil((r.dep-now)/60000))}</div><div><div class="route">${r.line} → ${dir==='city'?cityStop:'koju'}</div><div class="meta">${dir==='city'?r.origin:r.origin+' · '+r.destination}</div></div><div class="time">${r.departure}<div class="arrival">saabumisaeg ${r.arrival}</div></div></article>`).join('');
 }
 async function loadData(){const r=await fetch('./timetable.json?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('timetable');const x=await r.json();DATA=x.entries||[];}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{dir=b.dataset.dir;if(dir==='home')cityStop='Viru';render()});
 cityStopSelect.onchange=()=>{cityStop=cityStopSelect.value;render()};
-document.querySelector('#nowBtn').onclick=async()=>{mode='now';day.value='0';const n=new Date();clock.value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;try{await loadData()}catch(e){}render()};
+document.querySelector('#nowBtn').onclick=async()=>{mode='now';try{await loadData()}catch(e){}render()};
 document.querySelector('#otherBtn').onclick=()=>{mode='custom';render()};
 day.onchange=render;clock.onchange=render;fillDays();
 document.querySelector('#today').textContent=new Intl.DateTimeFormat('et-EE',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
