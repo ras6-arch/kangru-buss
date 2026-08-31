@@ -33,9 +33,7 @@ function render(){
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
  const now=new Date();
  const start=mode==='now'?new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),0,0):selectedTime();
- const date=localDate(start);
  let rows=dataWithCarryover(now).filter(r=>r.direction===dir);
- if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
  if(dir==='city')rows=rows.filter(r=>r.line==='116B'?r.origin==='Põdra tee':r.origin==='Kangru');
  rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=start).sort((a,z)=>a.dep-z.dep).slice(0,6);
@@ -51,5 +49,5 @@ document.querySelector('#otherBtn').onclick=()=>{mode='custom';render()};
 day.onchange=render;clock.onchange=render;fillDays();
 document.querySelector('#today').textContent=new Intl.DateTimeFormat('et-EE',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
 loadData().then(render).catch(()=>{list.innerHTML='<article class="ride" style="display:block"><strong>Sõiduplaani laadimine ebaõnnestus.</strong><div class="meta">Proovi lehte uuendada.</div></article>'});
-if('serviceWorker' in navigator){addEventListener('load',async()=>{const reg=await navigator.serviceWorker.register('./service-worker.js?v=6',{updateViaCache:'none'});reg.update()})}
+if('serviceWorker' in navigator){addEventListener('load',async()=>{const reg=await navigator.serviceWorker.register('./service-worker.js?v=7',{updateViaCache:'none'});reg.update()})}
 </script></body></html>
