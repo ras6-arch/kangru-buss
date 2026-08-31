@@ -1,14 +1,14 @@
 import csv, io, json, zipfile, urllib.request
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-GTFS_URL = 'https://eu-gtfs.remix.com/harjumaa.zip'
-LINES = {'116','116A','116B','116C'}
-HOME_STOPS = {'Kangru','Põdra tee'}
-CITY_STOPS = {'Viru','Kosmos','Kalev','Hallivanamehe','Viljandi maantee'}
-TZ = ZoneInfo('Europe/Tallinn')
-STOP_ALIASES = {'Viljandi mnt':'Viljandi maantee','Viljandi maantee':'Viljandi maantee'}
+GTFS_URL='https://eu-gtfs.remix.com/harjumaa.zip'
+LINES={'116','116A','116B','116C'}
+HOME_STOPS={'Kangru','Põdra tee'}
+CITY_STOPS={'Viru','Kosmos','Kalev','Hallivanamehe','Viljandi maantee'}
+TZ=ZoneInfo('Europe/Tallinn')
+STOP_ALIASES={'Viljandi mnt':'Viljandi maantee','Viljandi maantee':'Viljandi maantee'}
 
 def read_csv(z,name):
     with z.open(name) as f:return list(csv.DictReader(io.TextIOWrapper(f,encoding='utf-8-sig')))
@@ -60,20 +60,17 @@ entries.sort(key=lambda x:(x['dep_iso'],x['line'],x['destination']))
 if not entries:raise RuntimeError('Official Harjumaa GTFS produced zero timetable rows for lines 116/116A/116B/116C')
 with open('timetable.json','w',encoding='utf-8') as f:json.dump({'generated_at':datetime.now(TZ).isoformat(),'source':GTFS_URL,'entries':entries},f,ensure_ascii=False,separators=(',',':'))
 print(f'Wrote {len(entries)} timetable rows')
-now=datetime.now(TZ);limit=now+timedelta(hours=4)
-for dest in sorted(CITY_STOPS):
-    found=[]
-    for e in entries:
-        if e['direction']!='city' or e['destination']!=dest:continue
-        dep=datetime.fromisoformat(e['dep_iso'])
-        if now<=dep<=limit:found.append(e)
-    print(f'DIAG {dest} next4h count={len(found)}')
-    for e in found[:12]:print('DIAG',dest,e['line'],e['origin'],e['departure'],'arrival',e['arrival'],e['dep_iso'])
-future=[]
-for e in entries:
-    if e['direction']!='city':continue
-    dep=datetime.fromisoformat(e['dep_iso'])
-    if dep>=now:future.append((dep,e))
-future.sort(key=lambda x:x[0])
-print('DIAG nearest city entries regardless destination:')
-for dep,e in future[:30]:print('DIAG ALL',e['destination'],e['line'],e['origin'],e['departure'],'arrival',e['arrival'],e['dep_iso'])
+
+# diagnostics for late-night city-bound raw trips
+now=datetime.now(TZ);today=now.date();print('DIAG TODAY',today)
+late=[]
+for tid,pts in by_trip.items():
+    line,service_id=trip_info[tid];pts=sorted(pts);homes=[p for p in pts if p[1] in HOME_STOPS];cities=[p for p in pts if p[1] in CITY_STOPS]
+    for h in homes:
+        if h[2] < 22*60: continue
+        after=[c for c in cities if h[0] < c[0]]
+        if not after: continue
+        late.append((h[2],line,tid,service_id,h,after[-1],today in services.get(service_id,set())))
+late.sort()
+for dep_m,line,tid,service_id,h,c,active in late[:60]:
+    print('RAWLATE',hhmm(dep_m),line,'trip',tid,'service',service_id,'active_today',active,h[1],'->',c[1],hhmm(c[3]))
