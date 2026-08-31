@@ -63,20 +63,21 @@ for tid,pts in by_trip.items():
                 if key in seen:continue
                 seen.add(key);entries.append({'date':actual_date.isoformat(),'line':line,'direction':direction,'origin':origin[1],'destination':destination[1],'departure':hhmm(dep_m),'arrival':hhmm(arr_m),'dep_iso':to_iso(service_date,dep_m),'arr_iso':to_iso(service_date,arr_m)})
 
-now=datetime.now(TZ);today=now.date().isoformat();day0=datetime(now.year,now.month,now.day,tzinfo=TZ);carry_limit=day0+timedelta(days=1,hours=4)
-if not any(e['date']==today for e in entries) and previous_entries:
-    carry=[]
+# GTFS võib uuele teeninduspäevale üle minna enne, kui eelmise päeva hilisõhtused
+# ja pärast südaööd jätkuvad bussid on väljunud. Ära kustuta juba teadaolevat lähituleviku
+# väljumist ainult seetõttu, et värske GTFS seda enam ei sisalda.
+now=datetime.now(TZ);carry_limit=now+timedelta(hours=6)
+if previous_entries:
+    existing={(e['dep_iso'],e['line'],e['direction'],e['origin'],e['destination']) for e in entries}
+    added=0
     for e in previous_entries:
         try: dep=datetime.fromisoformat(e['dep_iso'])
         except Exception: continue
-        if day0<=dep<carry_limit:carry.append(e)
-    existing={(e['dep_iso'],e['line'],e['direction'],e['origin'],e['destination']) for e in entries}
-    added=0
-    for e in carry:
+        if not(now<=dep<=carry_limit):continue
         key=(e['dep_iso'],e['line'],e['direction'],e['origin'],e['destination'])
         if key not in existing:
             entries.append(e);existing.add(key);added+=1
-    print(f'GTFS rollover: preserved {added} existing rows through {carry_limit.isoformat()}')
+    if added:print(f'GTFS rollover: preserved {added} previously known future rows through {carry_limit.isoformat()}')
 
 entries.sort(key=lambda x:(x['dep_iso'],x['line'],x['destination']))
 if not entries:raise RuntimeError('Official transport data produced zero timetable rows for lines 116/116A/116B/116C')
