@@ -13,6 +13,7 @@ let DATA=[],dir='city',mode='now',cityStop='Viru';
 const list=document.querySelector('#list'),day=document.querySelector('#day'),clock=document.querySelector('#clock'),cityStopSelect=document.querySelector('#cityStop');
 const wd=['P','E','T','K','N','R','L'],names=['Pühapäev','Esmaspäev','Teisipäev','Kolmapäev','Neljapäev','Reede','Laupäev'];
 function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+function departureDate(r){const [y,mo,d]=r.date.split('-').map(Number),[h,m]=r.departure.split(':').map(Number);return new Date(y,mo-1,d,h,m,0,0)}
 function fillDays(){day.innerHTML='';let n=new Date();for(let i=0;i<7;i++){let d=new Date(n);d.setDate(n.getDate()+i);let label=i===0?'Täna':i===1?'Homme':names[d.getDay()];day.add(new Option(`${label} · ${wd[d.getDay()]}`,i));}}
 function baseDate(){let d=new Date();if(mode==='custom'){d.setDate(d.getDate()+Number(day.value));let [h,m]=clock.value.split(':').map(Number);d.setHours(h,m,0,0)}return d}
 function afterText(totalMin){totalMin=Math.max(0,totalMin);if(totalMin<60)return `${totalMin}<span>min pärast</span>`;let h=Math.floor(totalMin/60),m=totalMin%60;return `${h}<span class="hour-unit">h</span>${m}<span>min pärast</span>`}
@@ -22,13 +23,13 @@ function render(){
  document.querySelector('#custom').classList.toggle('show',mode==='custom');
  document.querySelector('#nowBtn').classList.toggle('active',mode==='now');
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
- const b=baseDate(),now=new Date(),date=localDate(b),limit=new Date(b.getTime()+4*60*60*1000);
+ const now=new Date(),b=mode==='now'?now:baseDate(),date=localDate(b),limit=new Date(now.getTime()+4*60*60*1000);
  let rows=DATA.filter(r=>r.direction===dir);
  if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
- rows=rows.map(r=>({...r,dep:new Date(r.dep_iso)})).filter(r=>r.dep>=b && (mode!=='now'||r.dep<=limit)).sort((a,z)=>a.dep-z.dep).slice(0,6);
+ rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=b&&(mode!=='now'||r.dep<=limit)).sort((a,z)=>a.dep-z.dep).slice(0,6);
  document.querySelector('#hint').textContent=mode==='now'?'Näitan järgmise 4 tunni väljumisi.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
- if(!rows.length){list.innerHTML='<article class="ride" style="display:block"><strong>Järgmise 4 tunni jooksul väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata hilisemaid sõite.</div></article>';return}
+ if(!rows.length){list.innerHTML=mode==='now'?'<article class="ride" style="display:block"><strong>Järgmise 4 tunni jooksul väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata hilisemaid sõite.</div></article>':'<article class="ride" style="display:block"><strong>Valitud ajal väljumisi ei leitud.</strong></article>';return}
  list.innerHTML=rows.map(r=>`<article class="ride"><div class="mins">${afterText(Math.ceil((r.dep-now)/60000))}</div><div><div class="route">${r.line} → ${dir==='city'?cityStop:'koju'}</div><div class="meta">${dir==='city'?r.origin:r.origin+' · '+r.destination}</div></div><div class="time">${r.departure}<div class="arrival">saabumisaeg ${r.arrival}</div></div></article>`).join('');
 }
 async function loadData(){const r=await fetch('./timetable.json?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('timetable');const x=await r.json();DATA=x.entries||[];}
@@ -39,5 +40,5 @@ document.querySelector('#otherBtn').onclick=()=>{mode='custom';render()};
 day.onchange=render;clock.onchange=render;fillDays();
 document.querySelector('#today').textContent=new Intl.DateTimeFormat('et-EE',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
 loadData().then(render).catch(()=>{list.innerHTML='<article class="ride" style="display:block"><strong>Sõiduplaani laadimine ebaõnnestus.</strong><div class="meta">Proovi lehte uuendada.</div></article>'});
-if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=5'))}
+if('serviceWorker' in navigator){addEventListener('load',async()=>{const reg=await navigator.serviceWorker.register('./service-worker.js?v=6',{updateViaCache:'none'});reg.update()})}
 </script></body></html>
