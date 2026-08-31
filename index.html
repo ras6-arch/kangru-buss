@@ -24,7 +24,8 @@ function render(){
  document.querySelector('#nowBtn').classList.toggle('active',mode==='now');
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
  const b=baseDate(),now=new Date(),date=localDate(b);
- let rows=DATA.filter(r=>r.date===date&&r.direction===dir);
+ let rows=DATA.filter(r=>r.direction===dir);
+ if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
  rows=rows.map(r=>({...r,dep:new Date(r.dep_iso)})).filter(r=>r.dep>=b).sort((a,z)=>a.dep-z.dep).slice(0,6);
  document.querySelector('#hint').textContent=dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`;
