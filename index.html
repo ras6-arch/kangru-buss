@@ -32,12 +32,13 @@ function render(){
  if(!rows.length){list.innerHTML='<article class="ride" style="display:block"><strong>Selle aja järel rohkem väljumisi ei leitud.</strong><div class="meta">Proovi varasemat kellaaega või järgmist päeva.</div></article>';return}
  list.innerHTML=rows.map(r=>`<article class="ride"><div class="mins">${afterText(Math.ceil((r.dep-now)/60000))}</div><div><div class="route">${r.line} → ${dir==='city'?cityStop:'koju'}</div><div class="meta">${dir==='city'?r.origin:r.origin+' · '+r.destination}</div></div><div class="time">${r.departure}<div class="arrival">saabumisaeg ${r.arrival}</div></div></article>`).join('');
 }
+async function loadData(){const r=await fetch('./timetable.json?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('timetable');const x=await r.json();DATA=x.entries||[];}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{dir=b.dataset.dir;if(dir==='home')cityStop='Viru';render()});
 cityStopSelect.onchange=()=>{cityStop=cityStopSelect.value;render()};
-document.querySelector('#nowBtn').onclick=()=>{mode='now';render()};
+document.querySelector('#nowBtn').onclick=async()=>{mode='now';day.value='0';const n=new Date();clock.value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;try{await loadData()}catch(e){}render()};
 document.querySelector('#otherBtn').onclick=()=>{mode='custom';render()};
 day.onchange=render;clock.onchange=render;fillDays();
 document.querySelector('#today').textContent=new Intl.DateTimeFormat('et-EE',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
-fetch('./timetable.json?v='+Date.now()).then(r=>r.json()).then(x=>{DATA=x.entries||[];render()}).catch(()=>{list.innerHTML='<article class="ride" style="display:block"><strong>Sõiduplaani laadimine ebaõnnestus.</strong><div class="meta">Proovi lehte uuendada.</div></article>'});
-if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js'))}
+loadData().then(render).catch(()=>{list.innerHTML='<article class="ride" style="display:block"><strong>Sõiduplaani laadimine ebaõnnestus.</strong><div class="meta">Proovi lehte uuendada.</div></article>'});
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=3'))}
 </script></body></html>
