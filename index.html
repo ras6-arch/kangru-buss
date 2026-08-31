@@ -27,8 +27,9 @@ function render(){
  let rows=DATA.filter(r=>r.direction===dir);
  if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
+ if(dir==='city')rows=rows.filter(r=>r.line==='116B'?r.origin==='Põdra tee':r.origin==='Kangru');
  rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=b).sort((a,z)=>a.dep-z.dep).slice(0,6);
- document.querySelector('#hint').textContent=mode==='now'?'Näitan järgmisi väljumisi praegusest kellaajast alates.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
+ document.querySelector('#hint').textContent=mode==='now'?'Näitan järgmisi väljumisi praegusest kellaajast alates.':(dir==='city'?'116B väljub Põdra teelt, teised liinid Kangrust.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
  if(!rows.length){list.innerHTML='<article class="ride" style="display:block"><strong>Selle aja järel rohkem väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata teist päeva või kellaaega.</div></article>';return}
  list.innerHTML=rows.map(r=>`<article class="ride"><div class="mins">${afterText(Math.ceil((r.dep-now)/60000))}</div><div><div class="route">${r.line} → ${dir==='city'?cityStop:'koju'}</div><div class="meta">${dir==='city'?r.origin:r.origin+' · '+r.destination}</div></div><div class="time">${r.departure}<div class="arrival">saabumisaeg ${r.arrival}</div></div></article>`).join('');
 }
