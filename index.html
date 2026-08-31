@@ -15,7 +15,7 @@ const wd=['P','E','T','K','N','R','L'],names=['Pühapäev','Esmaspäev','Teisip�
 function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function departureDate(r){const [y,mo,d]=r.date.split('-').map(Number),[h,m]=r.departure.split(':').map(Number);return new Date(y,mo-1,d,h,m,0,0)}
 function fillDays(){day.innerHTML='';let n=new Date();for(let i=0;i<7;i++){let d=new Date(n);d.setDate(n.getDate()+i);let label=i===0?'Täna':i===1?'Homme':names[d.getDay()];day.add(new Option(`${label} · ${wd[d.getDay()]}`,i));}}
-function baseDate(){let d=new Date();if(mode==='custom'){d.setDate(d.getDate()+Number(day.value));let [h,m]=clock.value.split(':').map(Number);d.setHours(h,m,0,0)}return d}
+function baseDate(){let d=new Date();if(mode==='custom'){d.setDate(d.getDate()+Number(day.value));let [h,m]=clock.value.split(':').map(Number);d.setHours(h,m,0,0)}else d.setSeconds(0,0);return d}
 function afterText(totalMin){totalMin=Math.max(0,totalMin);if(totalMin<60)return `${totalMin}<span>min pärast</span>`;let h=Math.floor(totalMin/60),m=totalMin%60;return `${h}<span class="hour-unit">h</span>${m}<span>min pärast</span>`}
 function render(){
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.dir===dir));
@@ -23,11 +23,12 @@ function render(){
  document.querySelector('#custom').classList.toggle('show',mode==='custom');
  document.querySelector('#nowBtn').classList.toggle('active',mode==='now');
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
- const now=new Date(),b=mode==='now'?now:baseDate(),date=localDate(b);
- let rows=DATA.filter(r=>r.date===date&&r.direction===dir);
+ const now=new Date(),b=baseDate(),date=localDate(b);
+ let rows=DATA.filter(r=>r.direction===dir);
+ if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
  rows=rows.map(r=>({...r,dep:departureDate(r)})).filter(r=>Number.isFinite(r.dep.getTime())&&r.dep>=b).sort((a,z)=>a.dep-z.dep).slice(0,6);
- document.querySelector('#hint').textContent=mode==='now'?'Näitan tänaseid väljumisi praegusest kellaajast alates.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
+ document.querySelector('#hint').textContent=mode==='now'?'Näitan järgmisi väljumisi praegusest kellaajast alates.':(dir==='city'?'Kangru ja Põdra tee väljumised koos.':`${cityStop} → Kangru / Põdra tee. Viru on alati vaikimisi.`);
  if(!rows.length){list.innerHTML='<article class="ride" style="display:block"><strong>Selle aja järel rohkem väljumisi ei leitud.</strong><div class="meta">Vali „Muu aeg“, et vaadata teist päeva või kellaaega.</div></article>';return}
  list.innerHTML=rows.map(r=>`<article class="ride"><div class="mins">${afterText(Math.ceil((r.dep-now)/60000))}</div><div><div class="route">${r.line} → ${dir==='city'?cityStop:'koju'}</div><div class="meta">${dir==='city'?r.origin:r.origin+' · '+r.destination}</div></div><div class="time">${r.departure}<div class="arrival">saabumisaeg ${r.arrival}</div></div></article>`).join('');
 }
