@@ -41,16 +41,22 @@ def graphql(query,variables):
 def sec_dt(service_day,seconds):return datetime.fromtimestamp(service_day,TZ)+timedelta(seconds=seconds)
 
 def peatus_today_entries():
-    now=datetime.now(TZ);day0=datetime(now.year,now.month,now.day,tzinfo=TZ);start_seconds=0;out=[];used=set();local_seen=set()
+    now=datetime.now(TZ);day0=datetime(now.year,now.month,now.day,tzinfo=TZ);start_epoch=int(day0.timestamp());out=[];used=set();local_seen=set()
     stop_query='''query($name:String!){stops(name:$name){gtfsId name code}}'''
-    dep_query='''query($id:String!,$n:Int!,$startTime:Long!){stop(id:$id){stoptimesWithoutPatterns(numberOfDepartures:$n,startTime:$startTime){serviceDay scheduledDeparture trip{gtfsId route{shortName}}}}}'''
+    dep_query='''query($id:String!,$n:Int!,$startTime:Long!){stop(id:$id){name code stoptimesWithoutPatterns(numberOfDepartures:$n,startTime:$startTime){serviceDay scheduledDeparture headsign trip{gtfsId route{shortName longName}}}}}'''
     trip_query='''query($id:String!){trip(id:$id){route{shortName} stoptimes{serviceDay scheduledArrival scheduledDeparture stop{name}}}}'''
     for home in sorted(HOME_STOPS):
         candidates=[s for s in graphql(stop_query,{'name':home})['stops'] if normalize_stop(s['name'])==home]
         for exact in candidates:
-            stop=graphql(dep_query,{'id':exact['gtfsId'],'n':100,'startTime':start_seconds})['stop']
-            for dep in (stop or {}).get('stoptimesWithoutPatterns',[]):
-                line=(dep.get('trip') or {}).get('route',{}).get('shortName');trip_id=(dep.get('trip') or {}).get('gtfsId')
+            stop=graphql(dep_query,{'id':exact['gtfsId'],'n':200,'startTime':start_epoch})['stop']
+            deps=(stop or {}).get('stoptimesWithoutPatterns',[])
+            if exact['gtfsId'] in {'estonia:5045','estonia:5044','estonia:29310','estonia:26721'}:
+                print('RAWSTOP',exact['gtfsId'],exact.get('code'),'count',len(deps))
+                for d in deps[:40]:
+                    r=(d.get('trip') or {}).get('route') or {};dt=sec_dt(d['serviceDay'],d['scheduledDeparture'])
+                    print('RAWDEP',exact['gtfsId'],dt.isoformat(),repr(r.get('shortName')),repr(d.get('headsign')),(d.get('trip') or {}).get('gtfsId'))
+            for dep in deps:
+                line=((dep.get('trip') or {}).get('route') or {}).get('shortName');trip_id=(dep.get('trip') or {}).get('gtfsId')
                 if line not in LINES or not trip_id or trip_id in used:continue
                 depdt=sec_dt(dep['serviceDay'],dep['scheduledDeparture'])
                 if not(day0<=depdt<day0+timedelta(days=2)):continue
