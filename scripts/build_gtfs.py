@@ -41,30 +41,31 @@ def graphql(query,variables):
 def sec_dt(service_day,seconds):return datetime.fromtimestamp(service_day,TZ)+timedelta(seconds=seconds)
 
 def peatus_today_entries():
-    now=datetime.now(TZ);start=int(datetime(now.year,now.month,now.day,tzinfo=TZ).timestamp());out=[];used=set()
+    now=datetime.now(TZ);day0=datetime(now.year,now.month,now.day,tzinfo=TZ);start_seconds=0;out=[];used=set();local_seen=set()
     stop_query='''query($name:String!){stops(name:$name){gtfsId name code}}'''
     dep_query='''query($id:String!,$n:Int!,$startTime:Long!){stop(id:$id){stoptimesWithoutPatterns(numberOfDepartures:$n,startTime:$startTime){serviceDay scheduledDeparture trip{gtfsId route{shortName}}}}}'''
     trip_query='''query($id:String!){trip(id:$id){route{shortName} stoptimes{serviceDay scheduledArrival scheduledDeparture stop{name}}}}'''
     for home in sorted(HOME_STOPS):
         candidates=[s for s in graphql(stop_query,{'name':home})['stops'] if normalize_stop(s['name'])==home]
-        print('PEATUS stop candidates',home,[(s['gtfsId'],s.get('code')) for s in candidates])
         for exact in candidates:
-            stop=graphql(dep_query,{'id':exact['gtfsId'],'n':50,'startTime':start})['stop']
+            stop=graphql(dep_query,{'id':exact['gtfsId'],'n':100,'startTime':start_seconds})['stop']
             for dep in (stop or {}).get('stoptimesWithoutPatterns',[]):
                 line=(dep.get('trip') or {}).get('route',{}).get('shortName');trip_id=(dep.get('trip') or {}).get('gtfsId')
                 if line not in LINES or not trip_id or trip_id in used:continue
+                depdt=sec_dt(dep['serviceDay'],dep['scheduledDeparture'])
+                if not(day0<=depdt<day0+timedelta(days=2)):continue
                 used.add(trip_id);trip=graphql(trip_query,{'id':trip_id})['trip']
                 if not trip:continue
                 sts=trip['stoptimes'];home_idxs=[i for i,s in enumerate(sts) if normalize_stop(s['stop']['name'])==home]
                 for hi in home_idxs:
                     hs=sts[hi];depdt=sec_dt(hs['serviceDay'],hs['scheduledDeparture'])
-                    if depdt.date()<now.date() or depdt>now+timedelta(days=1):continue
+                    if not(day0<=depdt<day0+timedelta(days=2)):continue
                     for cs in sts[hi+1:]:
                         city=normalize_stop(cs['stop']['name'])
                         if city not in CITY_STOPS:continue
                         arrdt=sec_dt(cs['serviceDay'],cs['scheduledArrival']);key=(depdt.isoformat(),line,'city',home,city)
-                        if key in seen:continue
-                        seen.add(key);out.append({'date':depdt.date().isoformat(),'line':line,'direction':'city','origin':home,'destination':city,'departure':depdt.strftime('%H:%M'),'arrival':arrdt.strftime('%H:%M'),'dep_iso':depdt.isoformat(),'arr_iso':arrdt.isoformat()})
+                        if key in local_seen:continue
+                        local_seen.add(key);out.append({'date':depdt.date().isoformat(),'line':line,'direction':'city','origin':home,'destination':city,'departure':depdt.strftime('%H:%M'),'arrival':arrdt.strftime('%H:%M'),'dep_iso':depdt.isoformat(),'arr_iso':arrdt.isoformat()})
     return out
 
 raw=urllib.request.urlopen(GTFS_URL,timeout=60).read();z=zipfile.ZipFile(io.BytesIO(raw));routes=read_csv(z,'routes.txt');trips=read_csv(z,'trips.txt');stops=read_csv(z,'stops.txt');stop_times=read_csv(z,'stop_times.txt');calendar=read_csv(z,'calendar.txt') if 'calendar.txt' in z.namelist() else [];calendar_dates=read_csv(z,'calendar_dates.txt') if 'calendar_dates.txt' in z.namelist() else []
