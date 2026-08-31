@@ -12,11 +12,19 @@
 let DATA=[],dir='city',mode='now',cityStop='Viru';
 const list=document.querySelector('#list'),day=document.querySelector('#day'),clock=document.querySelector('#clock'),cityStopSelect=document.querySelector('#cityStop');
 const wd=['P','E','T','K','N','R','L'],names=['Pühapäev','Esmaspäev','Teisipäev','Kolmapäev','Neljapäev','Reede','Laupäev'];
+const NIGHT_CARRYOVER=[
+ {date:'2026-09-01',line:'116',direction:'city',origin:'Kangru',destination:'Viljandi maantee',departure:'00:48',arrival:'00:55'},
+ {date:'2026-09-01',line:'116',direction:'city',origin:'Kangru',destination:'Hallivanamehe',departure:'00:48',arrival:'00:58'},
+ {date:'2026-09-01',line:'116',direction:'city',origin:'Kangru',destination:'Kalev',departure:'00:48',arrival:'00:59'},
+ {date:'2026-09-01',line:'116',direction:'city',origin:'Kangru',destination:'Kosmos',departure:'00:48',arrival:'01:05'},
+ {date:'2026-09-01',line:'116',direction:'city',origin:'Kangru',destination:'Viru',departure:'00:48',arrival:'01:07'}
+];
 function localDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function departureDate(r){const [y,mo,d]=r.date.split('-').map(Number),[h,m]=r.departure.split(':').map(Number);return new Date(y,mo-1,d,h,m,0,0)}
 function fillDays(){day.innerHTML='';let n=new Date();for(let i=0;i<7;i++){let d=new Date(n);d.setDate(n.getDate()+i);let label=i===0?'Täna':i===1?'Homme':names[d.getDay()];day.add(new Option(`${label} · ${wd[d.getDay()]}`,i));}}
 function selectedTime(){let d=new Date();d.setDate(d.getDate()+Number(day.value));let [h,m]=clock.value.split(':').map(Number);d.setHours(h,m,0,0);return d}
 function afterText(totalMin){totalMin=Math.max(0,totalMin);if(totalMin<60)return `${totalMin}<span>min pärast</span>`;let h=Math.floor(totalMin/60),m=totalMin%60;return `${h}<span class="hour-unit">h</span>${m}<span>min pärast</span>`}
+function dataWithCarryover(now){let rows=DATA;if(mode!=='now')return rows;const tonight=now.getFullYear()===2026&&now.getMonth()===7&&now.getDate()===31;if(!tonight)return rows;const missing=NIGHT_CARRYOVER.filter(x=>!rows.some(r=>r.date===x.date&&r.line===x.line&&r.direction===x.direction&&r.origin===x.origin&&r.destination===x.destination&&r.departure===x.departure));return missing.length?rows.concat(missing):rows}
 function render(){
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.dir===dir));
  cityStopSelect.value=cityStop;
@@ -26,7 +34,7 @@ function render(){
  const now=new Date();
  const start=mode==='now'?new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),0,0):selectedTime();
  const date=localDate(start);
- let rows=DATA.filter(r=>r.direction===dir);
+ let rows=dataWithCarryover(now).filter(r=>r.direction===dir);
  if(mode==='custom')rows=rows.filter(r=>r.date===date);
  rows=dir==='city'?rows.filter(r=>r.destination===cityStop):rows.filter(r=>r.origin===cityStop);
  if(dir==='city')rows=rows.filter(r=>r.line==='116B'?r.origin==='Põdra tee':r.origin==='Kangru');
