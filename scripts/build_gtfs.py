@@ -16,15 +16,15 @@ def parse_minutes(s):
     h,m,_=map(int,s.split(':'));return h*60+m
 def normalize_stop(name):return STOP_ALIASES.get(name,name)
 def service_dates(calendar_rows,exception_rows):
-    today=datetime.now(TZ).date();end=today+timedelta(days=120);out=defaultdict(set);weekdays=['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
+    today=datetime.now(TZ).date();first=today-timedelta(days=1);end=today+timedelta(days=120);out=defaultdict(set);weekdays=['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
     for r in calendar_rows:
-        start=max(today,datetime.strptime(r['start_date'],'%Y%m%d').date());stop=min(end,datetime.strptime(r['end_date'],'%Y%m%d').date());d=start
+        start=max(first,datetime.strptime(r['start_date'],'%Y%m%d').date());stop=min(end,datetime.strptime(r['end_date'],'%Y%m%d').date());d=start
         while d<=stop:
             if r[weekdays[d.weekday()]]=='1':out[r['service_id']].add(d)
             d+=timedelta(days=1)
     for r in exception_rows:
         d=datetime.strptime(r['date'],'%Y%m%d').date()
-        if not(today<=d<=end):continue
+        if not(first<=d<=end):continue
         if r['exception_type']=='1':out[r['service_id']].add(d)
         elif r['exception_type']=='2':out[r['service_id']].discard(d)
     return out
