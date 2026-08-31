@@ -125,3 +125,16 @@ if not entries:
 with open('timetable.json','w',encoding='utf-8') as f:
     json.dump({'generated_at':datetime.now(TZ).isoformat(),'source':GTFS_URL,'entries':entries},f,ensure_ascii=False,separators=(',',':'))
 print(f'Wrote {len(entries)} timetable rows')
+
+now = datetime.now(TZ)
+limit = now + timedelta(hours=4)
+viru_now = []
+for e in entries:
+    if e['direction'] != 'city' or e['destination'] != 'Viru':
+        continue
+    dep = datetime.fromisoformat(e['dep_iso'])
+    if now <= dep <= limit:
+        viru_now.append(e)
+print(f'DIAG now={now.isoformat()} limit={limit.isoformat()} Viru next4h count={len(viru_now)}')
+for e in viru_now[:20]:
+    print('DIAG', e['line'], e['origin'], e['departure'], '->', e['destination'], e['arrival'], e['dep_iso'])
