@@ -5,7 +5,7 @@
 <div class="top"><h1>Minu buss</h1><div class="today" id="today"></div></div>
 <div class="tabs"><button class="tab active" data-dir="city">LINNA</button><button class="tab" data-dir="home">KOJU</button></div>
 <div class="panel city"><div class="city-title"><small>Linnapeatus</small></div><select class="city-select" id="cityStop"><option value="Viru" selected>Viru</option><option value="Kosmos">Kosmos</option><option value="Kalev">Kalev</option><option value="Hallivanamehe">Hallivanamehe</option><option value="Viljandi maantee">Viljandi mnt</option></select></div>
-<div class="panel when"><div class="when-head"><div><small>Millal?</small><strong id="whenLabel">Praegu</strong></div></div><div class="seg"><button id="nowBtn" class="active">Praegu</button><button id="otherBtn">Muu aeg</button></div><div class="custom" id="custom"><label>Päev<select id="day"></select></label><label>Kell<input id="clock" type="time" value="18:00"></label></div></div>
+<div class="panel when"><div class="when-head"><div><small>Millal?</small></div></div><div class="seg"><button id="nowBtn" class="active">Praegu</button><button id="otherBtn">Muu aeg</button></div><div class="custom" id="custom"><label>Päev<select id="day"></select></label><label>Kell<input id="clock" type="time" value="18:00"></label></div></div>
 <p class="hint" id="hint"></p><section class="list" id="list"></section>
 <div class="foot">Sõiduplaan: ametlik Harjumaa GTFS.</div></main>
 <script>
@@ -19,7 +19,6 @@ function afterText(totalMin){totalMin=Math.max(0,totalMin);if(totalMin<60)return
 function render(){
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.dir===dir));
  cityStopSelect.value=cityStop;
- document.querySelector('#whenLabel').textContent=mode==='now'?'Praegu':`${day.options[day.selectedIndex].text} · ${clock.value}`;
  document.querySelector('#custom').classList.toggle('show',mode==='custom');
  document.querySelector('#nowBtn').classList.toggle('active',mode==='now');
  document.querySelector('#otherBtn').classList.toggle('active',mode==='custom');
@@ -40,5 +39,5 @@ document.querySelector('#otherBtn').onclick=()=>{mode='custom';render()};
 day.onchange=render;clock.onchange=render;fillDays();
 document.querySelector('#today').textContent=new Intl.DateTimeFormat('et-EE',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
 loadData().then(render).catch(()=>{list.innerHTML='<article class="ride" style="display:block"><strong>Sõiduplaani laadimine ebaõnnestus.</strong><div class="meta">Proovi lehte uuendada.</div></article>'});
-if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=4'))}
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=5'))}
 </script></body></html>
