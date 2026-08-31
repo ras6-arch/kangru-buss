@@ -5,8 +5,7 @@ from zoneinfo import ZoneInfo
 
 GTFS_URL = 'https://eu-gtfs.remix.com/harjumaa.zip'
 LINES = {'116','116A','116B','116C'}
-HOME_STOP_BY_LINE = {'116':'Kangru','116A':'Kangru','116B':'Põdra tee','116C':'Kangru'}
-HOME_STOPS = set(HOME_STOP_BY_LINE.values())
+HOME_STOPS = {'Kangru','Põdra tee'}
 CITY_STOPS = {'Viru','Kosmos','Kalev','Hallivanamehe','Viljandi maantee'}
 TZ = ZoneInfo('Europe/Tallinn')
 STOP_ALIASES = {
@@ -90,8 +89,7 @@ seen = set()
 for tid, pts in by_trip.items():
     line, service_id = trip_info[tid]
     pts = sorted(pts)
-    home_stop = HOME_STOP_BY_LINE[line]
-    homes = [p for p in pts if p[1] == home_stop]
+    homes = [p for p in pts if p[1] in HOME_STOPS]
     cities = [p for p in pts if p[1] in CITY_STOPS]
     for service_date in sorted(services.get(service_id,())):
         for h in homes:
